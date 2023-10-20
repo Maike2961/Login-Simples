@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template,url_for,redirect,flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import login_required,LoginManager,UserMixin,logout_user, login_user
 from datetime import timedelta, datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,6 +12,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["SECRET_KEY"] = "aterces25"
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 #CONFIGURAÇÕES DE LOGIN
 login_manager=LoginManager(app)
