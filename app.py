@@ -2,7 +2,7 @@ from flask import Flask, request, render_template,url_for,redirect,flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import login_required,LoginManager,UserMixin,logout_user, login_user
-from datetime import timedelta, datetime, date
+from datetime import timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
 #CONFIGURAÇÕES DE BANCO DE DADOS
@@ -36,8 +36,10 @@ class usuario(db.Model, UserMixin):
     email = db.Column(db.String(100), nullable=False, unique=True, index=True)
     senha = db.Column(db.String(255), nullable=False)
     
-    def __init__(self):
-        return self.nome
+    def __init__(self, nome, email, senha):
+        self.nome = nome
+        self.email = email
+        self.senha = senha
 
 #ROTA PARA LOGIN    
 @app.route("/login", methods=["POST", "GET"])
@@ -69,10 +71,7 @@ def cadastro():
             flash("Por favor preencha todos os campos") 
             return redirect(url_for('cadastro'))
         else:
-            salvar = usuario()
-            salvar.nome = nome
-            salvar.email = email
-            salvar.senha = generate_password_hash(senha)
+            salvar = usuario(nome, email, generate_password_hash(senha))
             db.session.add(salvar)
             db.session.commit()
             return redirect(url_for('login'))
