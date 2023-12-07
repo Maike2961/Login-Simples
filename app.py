@@ -1,15 +1,17 @@
-from flask import Flask, request, render_template,url_for,redirect,flash
+from flask import Flask, request, render_template,url_for,redirect,flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import login_required,LoginManager,UserMixin,logout_user, login_user
-from datetime import timedelta
+from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
 #CONFIGURAÇÕES DE BANCO DE DADOS
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"]= "sqlite:///app.db"
+app.config["SQLALCHEMY_DATABASE_URI"]= os.environ["SQLITE"]
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-app.config["SECRET_KEY"] = "aterces25"
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -35,6 +37,7 @@ class usuario(db.Model, UserMixin):
     nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True, index=True)
     senha = db.Column(db.String(255), nullable=False)
+    ultimologin = db.Column(db.Date)
     
     def __init__(self, nome, email, senha):
         self.nome = nome
@@ -56,6 +59,11 @@ def login():
             return redirect(url_for('login'))
         else:
             login_user(userlog, duration=timedelta(hours=1))
+            session["username"] = userlog.nome
+            session['logged_in']=True
+            print("Usuário logado: " + str(userlog.nome))
+            setattr(userlog, "ultimologin", datetime.now())
+            db.session.commit()
             return redirect(url_for('home'))
     return render_template("index.html")
 
@@ -72,27 +80,35 @@ def cadastro():
             return redirect(url_for('cadastro'))
         else:
             salvar = usuario(nome, email, generate_password_hash(senha))
+            setattr(salvar, "ultimologin", datetime.now())
             db.session.add(salvar)
             db.session.commit()
+            flash(f"cadastro de {nome}")
             return redirect(url_for('login'))
     return render_template("cadastro.html")
 
 @app.route("/")
 def redi():
-    return redirect("/home")
+    if 'logged_in' in session:
+        return redirect("/home")
+    else:
+        return render_template("index.html")
+    
 
 #ROTA HOME
 @app.route('/home', methods=["POST", "GET"])
 @login_required
 def home():
-    print("1")#APENAS UM PRINT  
-    return render_template("home.html")
+    if 'username' in session:
+        name= session['username']
+    return render_template("home.html", name=name)
 
 #ROTA PARA SAIR
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
+    session.pop("logged_in")
     return redirect(url_for('login'))
 
 #ROTA PARA TROCAR DE SENHA
