@@ -60,7 +60,8 @@ def login():
         else:
             login_user(userlog, duration=timedelta(hours=1))
             session["username"] = userlog.nome
-            session['logged_in']=True
+            session["id"] = userlog.id
+            ##session['logged_in']=True
             print("Usuário logado: " + str(userlog.nome))
             setattr(userlog, "ultimologin", datetime.now())
             db.session.commit()
@@ -83,18 +84,14 @@ def cadastro():
             setattr(salvar, "ultimologin", datetime.now())
             db.session.add(salvar)
             db.session.commit()
-            flash(f"cadastro de {nome}")
+            flash(f"cadastro de {nome} feito com sucesso")
             return redirect(url_for('login'))
     return render_template("cadastro.html")
 
 @app.route("/")
 def redi():
-    if 'logged_in' in session:
-        return redirect("/home")
-    else:
-        return render_template("index.html")
+    return redirect("/home")
     
-
 #ROTA HOME
 @app.route('/home', methods=["POST", "GET"])
 @login_required
@@ -108,7 +105,7 @@ def home():
 @login_required
 def logout():
     logout_user()
-    session.pop("logged_in")
+    session.pop("username")
     return redirect(url_for('login'))
 
 #ROTA PARA TROCAR DE SENHA
